@@ -1,4 +1,4 @@
-Arduino Command Line Project Tools
+Arduino Command Line Project Tools (LINUX)
 
 	NewSketch     -    Create new Arduino INO and Makefile
 	NewMakefile   -    Create new Arduino Makefile
