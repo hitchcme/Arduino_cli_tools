@@ -1,0 +1,73 @@
+#!/bin/bash
+
+function make_Makefile() {
+	SKETCHBOOK_PATH=$1
+	SKETCHNAME=$2
+	DEVICE=$3
+	BOARD_TAG=$4
+	echo -e "BOARD_TAG = ${BOARD_TAG}\nMONITOR_PORT = ${DEVICE}\n\ninclude /usr/share/arduino/Arduino.mk\n" > ${SKETCHBOOK_PATH}/${SKETCHNAME}/Makefile
+}
+
+function make_ino() {
+	SKETCHBOOK_PATH=$1
+	SKETCHNAME=$2
+	echo -e "void setup() {\n  // put your setup code here, to run once:\n\n}\n\nvoid loop() {\n  // put your main code here, to run repeatedly:\n\n}">${SKETCHBOOK_PATH}/${SKETCHNAME}/${SKETCHNAME}.ino
+}
+
+
+SKETCHBOOK_PATH=$(readlink -f ~/sketchbook)
+
+SKETCHNAME=$1
+DEVICES=($(ls -a $2))
+DEVICE=${DEVICES[0]}
+iCNT=0
+for i in ${DEVICES[@]}; do
+	if ((iCNT==0)); then
+		DEVICE=$(echo $i)
+	else
+		DEVICE=$(echo -e "$DEVICE\|$i")
+	fi
+	iCNT=($(echo "$iCNT+1"|bc -l))
+done
+if ((${#DEVICES[@]}>1)); then
+	echo There are more than one match for the device path.
+	echo -e "Here's the list of matches."
+	#echo -e "/dev/serial/by-id/usb-1a86_USB2.0-Serial-if00-port0   	                                    	atmega328"
+	echo -e "	Device Path											| Board Tag"
+	echo -e "	------------------------------------------------------------------------------------------------|---------------"
+	for i in ${DEVICES[@]}; do
+		DEVICE=$i
+		while ((${#DEVICE}<90)); do
+			DEVICE=$DEVICE$(echo -e " ")
+			#echo ${#DEVICE}
+		done
+		TAG=$(list_arduinos|grep $i|awk '{print $2}')
+		echo -e "	$DEVICE	| $TAG"
+	done
+	echo -e "       -----------------------------------------------------------------------------------------------------------------"
+else
+	BOARD_TAG=$(list_arduinos|grep $(echo -e "${DEVICE}")|awk '{print $2}')
+	echo "------------------"
+	echo "Information:"
+	echo "------------------"
+	echo -e "	Sketch Name: 	$SKETCHNAME"
+	echo -e "	Device:		$DEVICE"
+	echo -e "	Board Tag:	$BOARD_TAG"
+	echo "-------------------------------------------------------"
+
+	mkdir -p ${SKETCHBOOK_PATH}/${SKETCHNAME}
+	make_ino "${SKETCHBOOK_PATH}" "${SKETCHNAME}"
+	make_Makefile "${SKETCHBOOK_PATH}" "${SKETCHNAME}" "${DEVICE}" "${BOARD_TAG}"
+	echo -e "\n"
+	echo "----------------------------------------------------------------------------------------------------------"
+	echo "${SKETCHBOOK_PATH}/${SKETCHNAME}/${SKETCHNAME}.ino (contents)"
+	echo "----------------------------------------------------------------------------------------------------------"
+	cat ${SKETCHBOOK_PATH}/${SKETCHNAME}/${SKETCHNAME}.ino|awk '{print "\t",$0}'
+	echo "----------------------------------------------------------------------------------------------------------"
+	echo -e "\n"
+	echo "----------------------------------------------------------------------------------------------------------"
+	echo "${SKETCHBOOK_PATH}/${SKETCHNAME}/Makefile (contents)"
+	echo "----------------------------------------------------------------------------------------------------------"
+	cat ${SKETCHBOOK_PATH}/${SKETCHNAME}/Makefile|awk '{print "\t",$0}'
+	echo "----------------------------------------------------------------------------------------------------------"
+fi

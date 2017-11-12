@@ -1,0 +1,13 @@
+#!/bin/bash
+
+BRDSTXT=/usr/share/arduino/hardware/arduino/boards.txt
+DEVICES=($(ls -a /dev/serial/by-id/*))
+for i in ${DEVICES[@]}; do
+	DEVICE=$i
+	BOARDNAME_LINE=$(udevadm info --name=${DEVICE}|grep -e "E: ID_MODEL_FROM_DATABASE="|sed -e 's/E\: ID_MODEL_FROM_DATABASE\=//g'|sed -e 's/ [rR][0-9] ([Cc][Dd][Cc] [Aa][Cc][Mm])//g')
+	BOARDNAME_LINE=$(echo $BOARDNAME_LINE|sed -e 's/HL-340 USB-Serial adapter/atmega 328/g')
+	BOARDNAME_LINE=$(echo $BOARDNAME_LINE|sed -e 's/ //g'|awk '{print tolower($0)}')
+	BOARDNAME_LINE="${BOARDNAME_LINE}.name"
+	BOARD_TAG=$(cat ${BRDSTXT}|grep "${BOARDNAME_LINE}"|sed -e 's/\.name.*//g')
+	echo -e "$DEVICE	$BOARD_TAG"
+done
